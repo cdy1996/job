@@ -1,5 +1,6 @@
 package com.cdy.job.controller;
 
+import com.cdy.job.dao.ScheduleTaskRepository;
 import com.cdy.job.entity.ScheduleTask;
 import com.cdy.job.util.ScheduleUtil;
 import org.quartz.Scheduler;
@@ -23,18 +24,22 @@ public class TaskController {
     ScheduleUtil scheduleUtil;
     @Autowired
     Scheduler scheduler;
+    @Autowired
+    ScheduleTaskRepository taskRepository;
     
     @PostMapping
     @ResponseBody
     public String addTask(ScheduleTask task){
-        scheduleUtil.startJob(task.getName(), task.getGroup(), task.getCron(), task.getType(), task.getType()==1?task.getTaskUrl():task.getClassName());
+        taskRepository.save(task);
+//        scheduleUtil.startJob(task.getName(), task.getGroup(), task.getCron(), task.getType(), task.getType()==1?task.getTaskUrl():task.getClassName());
         return "add ok";
     }
     
     @PutMapping
     @ResponseBody
     public String updateTask(ScheduleTask task){
-        scheduleUtil.modifyJobTime(task.getName(), task.getGroup(), task.getCron(), task.getType(), task.getType()==1?task.getTaskUrl():task.getClassName());
+        taskRepository.save(task);
+//        scheduleUtil.modifyJobTime(task.getName(), task.getGroup(), task.getCron(), task.getType(), task.getType()==1?task.getTaskUrl():task.getClassName());
         return "update ok";
     }
     

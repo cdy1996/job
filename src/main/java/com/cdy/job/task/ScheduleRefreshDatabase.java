@@ -25,36 +25,40 @@ public class ScheduleRefreshDatabase {
     
     // 同步一次，然后通过事件推送来更新相应的属性
 //    @Scheduled(fixedRate = 1000*60*10)
-    public void scheduleUpdateCronTrigger() throws SchedulerException {
+    public void scheduleUpdateCronTrigger() {
         Scheduler scheduler = (Scheduler) SpringUtil.getBean("scheduler");
         ScheduleTaskRepository taskRepository = SpringUtil.getBean(ScheduleTaskRepository.class);
         ScheduleUtil scheduleUtil = SpringUtil.getBean(ScheduleUtil.class);
         List<ScheduleTask> all = taskRepository.findAll();
         for (ScheduleTask scheduleTask : all) {
-            TriggerKey triggerKey = new TriggerKey(scheduleTask.getName(), scheduleTask.getGroup());
-            CronTrigger oldTrigger = (CronTrigger) scheduler.getTrigger(triggerKey);
-            log.info("添加 or 修改 " + (oldTrigger==null));
-            if (oldTrigger == null) {
-                scheduleUtil.startJob(scheduleTask.getName(),
-                        scheduleTask.getGroup(),
-                        scheduleTask.getCron(),
-                        scheduleTask.getType(),
-                        scheduleTask.getType() == 1 ? scheduleTask.getTaskUrl() : scheduleTask.getClassName());
-            } else {
-                //定时表达式不同 或者 是要修改远程任务的url
-                //本地任务只能修改表达式，不能通过修改类路径来修改任务
-                if (!oldTrigger.getCronExpression().equalsIgnoreCase(scheduleTask.getCron()) ||
-                        (scheduleTask.getType() == 1 &&
-                                !StringUtils.endsWithIgnoreCase((String) oldTrigger.getJobDataMap().get("url"), scheduleTask.getTaskUrl()))) {
-                    
-                    scheduleUtil.modifyJobTime(scheduleTask.getName(),
+            try {
+                TriggerKey triggerKey = new TriggerKey(scheduleTask.getName(), scheduleTask.getGroup());
+                CronTrigger oldTrigger = (CronTrigger) scheduler.getTrigger(triggerKey);
+                log.info("添加 or 修改 " + (oldTrigger==null));
+                if (oldTrigger == null) {
+                    scheduleUtil.startJob(scheduleTask.getName(),
                             scheduleTask.getGroup(),
                             scheduleTask.getCron(),
                             scheduleTask.getType(),
                             scheduleTask.getType() == 1 ? scheduleTask.getTaskUrl() : scheduleTask.getClassName());
+                } else {
+                    //定时表达式不同 或者 是要修改远程任务的url
+                    //本地任务只能修改表达式，不能通过修改类路径来修改任务
+                    if (!oldTrigger.getCronExpression().equalsIgnoreCase(scheduleTask.getCron()) ||
+                            (scheduleTask.getType() == 1 &&
+                                    !StringUtils.endsWithIgnoreCase((String) oldTrigger.getJobDataMap().get("url"), scheduleTask.getTaskUrl()))) {
+                        
+                        scheduleUtil.modifyJobTime(scheduleTask.getName(),
+                                scheduleTask.getGroup(),
+                                scheduleTask.getCron(),
+                                scheduleTask.getType(),
+                                scheduleTask.getType() == 1 ? scheduleTask.getTaskUrl() : scheduleTask.getClassName());
+                    }
                 }
+            } catch (SchedulerException e) {
+                log.error(e.getMessage(), e);
             }
-            
+    
         }
     }
 }
